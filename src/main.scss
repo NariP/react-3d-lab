@@ -43,7 +43,7 @@
   }
 
   html,
-  body {
+  body,#root {
     height: theme('height.full');
   }
 }
