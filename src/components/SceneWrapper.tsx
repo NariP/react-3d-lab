@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { PerspectiveCamera, Stats, Text } from '@react-three/drei';
+import { PerspectiveCamera, Text } from '@react-three/drei';
 import { Canvas, Vector3 } from '@react-three/fiber';
 
 interface Props {
@@ -19,6 +19,7 @@ const SceneWrapper = ({ title, children }: Props) => {
           powerPreference: 'high-performance',
           localClippingEnabled: true,
           autoClearStencil: true,
+          stencil: true,
         }}
       >
         <color attach="background" args={['#ffffff']} />
@@ -56,7 +57,6 @@ const SceneWrapper = ({ title, children }: Props) => {
         <Text position={[0, 4, 0]} fontSize={0.5} color="black" fontWeight="bold">
           {title}
         </Text>
-        <Stats />
       </Canvas>
     </div>
   );

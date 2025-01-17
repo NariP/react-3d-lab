@@ -1,4 +1,4 @@
-import { ReactNode, useRef } from 'react';
+import { ReactNode, forwardRef, useRef, useState } from 'react';
 import { Base, Geometry, Subtraction } from '@react-three/csg';
 import { DragControls, OrbitControls } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -12,20 +12,23 @@ import {
   Vector3,
 } from 'three';
 // https://stackoverflow.com/questions/68462419/three-js-breaks-when-trying-to-import-orbitcontrols-js
-import { OrbitControls as OrbitControlsImp } from 'three/examples/jsm/controls/OrbitControls.js';
+// https://github.com/pmndrs/drei/issues/730 ref type
+import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import Gizmo from '@/components/Gizmo';
 import SceneWrapper from '@/components/SceneWrapper';
+import StencilGroup from '@/components/StencilGroup';
 
-const TempPage = () => {
+const ClippingPlanesPage = () => {
   return (
-    <div>
+    <div className="relative">
       <SceneWrapper title="Clipping Planes">
         <ClippingPlaneExample />
+        <OrbitControls makeDefault target={[0, 1, 0]} />
+        <Gizmo margin={[80, 160]} />
       </SceneWrapper>
     </div>
   );
 };
-
-// todo: 1. x,y,z 축 바꾸기 3. 스텐실 4. 해설
 
 interface BoxProps {
   clippingPlane: Plane;
@@ -42,11 +45,25 @@ const BOX_TOP = BOX_Y_POSITION + BOX_SIZE / 2; // 1.2
 // Clipping plane 설정
 const CLIP_NORMAL = new Vector3(0, -1, 0);
 
-const Box = ({ clippingPlane }: BoxProps) => {
-  const meshRef = useRef<Mesh>(null);
+const Box = forwardRef<Mesh, BoxProps>(({ clippingPlane }, ref) => {
+  const meshRef = useRef<Mesh | null>(null);
 
   return (
-    <mesh castShadow ref={meshRef} position={[0, BOX_Y_POSITION, 0]}>
+    <mesh
+      castShadow
+      position={[0, BOX_Y_POSITION, 0]}
+      ref={el => {
+        if (meshRef.current) {
+          meshRef.current = el;
+        }
+
+        if (typeof ref === 'function') {
+          ref(el);
+        } else if (ref) {
+          ref.current = el;
+        }
+      }}
+    >
       <boxGeometry args={[BOX_SIZE, BOX_SIZE, BOX_SIZE]} />
       <meshPhongMaterial
         clipShadows
@@ -58,7 +75,9 @@ const Box = ({ clippingPlane }: BoxProps) => {
       />
     </mesh>
   );
-};
+});
+
+Box.displayName = 'Box';
 
 interface DragHandlerProps {
   plane: Plane;
@@ -80,7 +99,7 @@ const DragHandler = ({ plane, children }: DragHandlerProps) => {
   const dragStartPositionRef = useRef<Vector3>(new Vector3());
 
   const { controls } = useThree<{
-    controls: OrbitControlsImp; // 여기에 controls의 타입 지정
+    controls: OrbitControlsImpl; // 여기에 controls의 타입 지정
   }>();
 
   useFrame(() => {
@@ -190,20 +209,47 @@ const DragHandlerView = ({ width = 0, height = 0, center, color, renderOrder }: 
 const clippingPlane = new Plane(CLIP_NORMAL, BOX_TOP);
 
 const ClippingPlaneExample = () => {
+  const boxRef = useRef<Mesh>(null);
+  const [boxPosition, setBoxPosition] = useState<Vector3>(new Vector3());
+  const positionRef = useRef(new Vector3()); // 여기서 한 번만 생성
+
+  useFrame(() => {
+    if (boxRef.current) {
+      boxRef.current.getWorldPosition(positionRef.current);
+      setBoxPosition(positionRef.current);
+    }
+  });
+
   return (
     <>
+      <Box ref={boxRef} clippingPlane={clippingPlane} />
+      <StencilGroup
+        clippingPlanes={[clippingPlane]}
+        width={BOX_SIZE}
+        height={BOX_SIZE}
+        boxPosition={boxPosition}
+        color="pink"
+        renderOrder={20}
+      />
+      <StencilGroup
+        clippingPlanes={[clippingPlane]}
+        width={BOX_SIZE / 2}
+        height={BOX_SIZE}
+        boxPosition={boxPosition}
+        color="red"
+        renderOrder={25}
+      />
       <DragHandler plane={clippingPlane}>
         <DragHandlerView
           color={0x000000}
           center={new Vector3(0, 0, 0)}
           width={BOX_SIZE * 1.2}
           height={BOX_SIZE * 1.2}
+          renderOrder={30}
         />
       </DragHandler>
-      <Box clippingPlane={clippingPlane} />
-      <OrbitControls makeDefault target={[0, 1, 0]} />
     </>
   );
 };
 
-export default TempPage;
+export default ClippingPlanesPage;
