@@ -26,8 +26,8 @@ const MenuLayout = ({ children }: { children?: ReactNode }) => {
 };
 
 const chapters = [
-  { label: 'chapter1', pathname: '/chapter-1' },
-  { label: 'chapter2', pathname: '/chapter-2' },
+  { label: 'Basic', pathname: '/chapter-1' },
+  { label: 'ClippingPlanes', pathname: '/clipping-planes' },
 ];
 
 export default MenuLayout;
